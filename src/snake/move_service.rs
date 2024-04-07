@@ -1,33 +1,34 @@
 use bevy::input::ButtonInput;
 
-use bevy::prelude::{Entity, KeyCode, Query, Res, ResMut};
+use bevy::prelude::{Commands, Entity, EventReader, KeyCode, Query, Res, ResMut};
 use bevy::prelude::KeyCode::{ArrowDown, ArrowLeft, ArrowRight, ArrowUp};
-use crate::snake::properties::{Head, Position, SnakeBody};
+use crate::snake::properties::{GrowthEvent, Head, Position, SnakeBody, Tail};
 use crate::snake::properties::Direction::{DOWN, LEFT, RIGHT, UP};
 
-pub fn manage_movement(mut body: ResMut<SnakeBody>,
+pub fn manage_movement(body: ResMut<SnakeBody>,
+                       tail: ResMut<Tail>,
                        keyboard_input: Res<ButtonInput<KeyCode>>,
                        mut query: Query<(Entity, &mut Head)>,
-                       mut positions: Query<&mut Position>) {
+                       positions: Query<&mut Position>) {
     if let Some((head_entity, mut head)) = query.iter_mut().next() {
-        if !keyboard_input.any_pressed([ArrowUp, ArrowRight, ArrowDown, ArrowLeft]) {
-            move_snake(body, positions, head_entity, head.as_ref());
-            return;
-        }
         if keyboard_input.pressed(ArrowUp) {
-            head.direction = Some(UP);
+            head.set_direction_if_not_opposite(UP);
         } else if keyboard_input.pressed(ArrowDown) {
-            head.direction = Some(DOWN);
+            head.set_direction_if_not_opposite(DOWN);
         } else if keyboard_input.pressed(ArrowLeft) {
-            head.direction = Some(LEFT);
+            head.set_direction_if_not_opposite(LEFT);
         } else if keyboard_input.pressed(ArrowRight) {
-            head.direction = Some(RIGHT);
+            head.set_direction_if_not_opposite(RIGHT);
         }
-        move_snake(body, positions, head_entity, head.as_ref());
+        move_snake(body, tail, positions, head_entity, head.as_ref());
     }
 }
 
-fn move_snake(mut body: ResMut<SnakeBody>, mut positions: Query<&mut Position>, head_entity: Entity, head: &Head) {
+
+
+fn move_snake(mut body: ResMut<SnakeBody>,
+              mut tail: ResMut<Tail>,
+              mut positions: Query<&mut Position>, head_entity: Entity, head: &Head) {
     let mut head_position = positions.get_mut(head_entity).unwrap();
     let mut old_pos = Position::from(head_position.x, head_position.y);
 
@@ -53,4 +54,5 @@ fn move_snake(mut body: ResMut<SnakeBody>, mut positions: Query<&mut Position>, 
         position.y = old_pos.y;
         old_pos = holder;
     }
+    tail.0 = Some(old_pos);
 }

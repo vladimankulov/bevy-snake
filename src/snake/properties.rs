@@ -1,6 +1,8 @@
+use std::cmp::PartialEq;
 use std::collections::linked_list::{Iter, IterMut};
 use std::collections::LinkedList;
-use bevy::prelude::{Component, Entity, Resource};
+use bevy::prelude::{Component, Entity, Event, Resource};
+use crate::snake::properties::Direction::{DOWN, LEFT, RIGHT, UP};
 
 #[derive(Component)]
 pub struct Head {
@@ -10,7 +12,13 @@ pub struct Head {
 #[derive(Component)]
 pub struct Body {}
 
-#[derive(Component)]
+#[derive(Resource, Default)]
+pub struct Tail(pub Option<Position>);
+
+#[derive(Event)]
+pub struct GrowthEvent;
+
+#[derive(Component, Copy, Clone, PartialEq, Eq)]
 pub enum Direction {
     UP,
     DOWN,
@@ -73,5 +81,29 @@ impl Position {
 impl Default for Head {
     fn default() -> Self {
         Head { direction: None }
+    }
+}
+
+impl Direction {
+    fn get_opposite(&self) -> Direction {
+        match *self {
+            UP => { DOWN }
+            DOWN => { UP }
+            RIGHT => { LEFT }
+            LEFT => { RIGHT }
+        }
+    }
+}
+
+impl Head {
+    pub fn set_direction_if_not_opposite(&mut self, direction: Direction) {
+        self.direction = self.direction.as_ref()
+            .map_or_else(|| { Some(direction) }, |d| {
+                return if *d != direction.get_opposite() {
+                    Some(direction)
+                } else {
+                    Some(*d)
+                };
+            });
     }
 }
